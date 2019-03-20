@@ -1,0 +1,17 @@
+Tag 1 = /h "Hypotheses"
+Tag 2 = /q "Questions"
+Tag 3 = /o "Observations"
+Tag 4 = /a "Advice"
+Tag 5 = /d "Directives"
+Tag 6 = /c "Coding"
+Tag 7 = /t "Teaching"
+Tag 8 = /w "Writing"
+Tag 9 = /r "Reddit"
+Tag 10 = /p "People"
+Tag 9 = /m "Me"
+Tag 10 = /k "Quotes"
+Tag 11 = /n "Notes"
+Tag 12 = /z "Text Calibration"
+
+All relationships are temporary But the value you create once for people will stick. So whenever you see people leave your community, maybe you just let them go. Trying to win them back by aggressive re-engagement campaigns might as well ruin the relationship you established in the first place. | As long as you were valuable for someone for the time being, they’ll come back to you sooner or later. That’s how long-lasting communities are created.  /a
+How long can you provide value for? What we often forget when dealing with these metrics is that relationships have a certain lifetime value. We automatically assume that the idea we’re building a community around is so amazing that people want to stick with it forever. The truth is that only few ideas, products or services are so universally strong that they can provide value forever. /a
