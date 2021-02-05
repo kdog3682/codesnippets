@@ -1,0 +1,22 @@
+[
+  {
+    "date": "02-05-2021",
+    "value": [
+      "spaceParser",
+      "betweenParser",
+      "bestText",
+      "srequest",
+      "replaceSpacesInComments",
+      "reader",
+      "splitter",
+      "splitter22",
+      "regexjoin",
+      "codeCapitalizer",
+      "sliceCapitalize",
+      "replaceFactory",
+      "percentChange",
+      "wbnbReplace",
+      "getMathTemplates"
+    ]
+  }
+]
