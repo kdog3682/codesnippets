@@ -1,0 +1,85 @@
+
+
+<input id="inputText"/>
+<input id="shift"/>
+<div   id="output"></div>
+<button id="button">Click to get Ciphered Value</button>
+
+<script>
+const inputText = document.getElementById('inputText')
+const shift = document.getElementById('shift')
+const button = document.getElementById('button')
+const output = document.getElementById('output')
+
+let inputValue = ''
+let shiftValue = ''
+
+inputText.addEventListener('change', (e) => {
+    inputValue = e.value
+})
+
+shift.addEventListener('change', (e) => {
+    shiftValue = e.value
+})
+
+button.addEventListener('click', (e) => {
+    const text = caesarCipher(inputValue, shift)
+    output.textContent = text
+})
+
+function caesarCipher(s, shift) {
+  //https://gist.github.com/EvanHahn/2587465
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  // Encoded Text
+  let encodedText = '';
+
+  shift = parseInt(shift)
+
+  // Adjust Shift (Over 26 Characters)
+  if (shift > 26) {
+    // Assign Remainder As Shift
+    shift = shift % 26;
+  }
+
+  // Iterate Over Data
+  let i = 0;
+  let number = 0;
+  while (i < s.length) {
+    // Valid Alphabet Characters
+    if (alphabet.indexOf(s[i]) !== -1) {
+      // Find Alphabet Index
+      const alphabetIndex = alphabet.indexOf((s[i]).toUpperCase());
+
+      // Alphabet Index Is In Alphabet Range
+      if (alphabet[alphabetIndex + shift]) {
+        // Append To s
+        encodedText += alphabet[alphabetIndex + shift];
+      }
+      // Alphabet Index Out Of Range (Adjust Alphabet By 26 Characters)
+      else {
+        // Append To s
+        encodedText += alphabet[alphabetIndex + shift - 26];
+      }
+    }
+    // Special Characters
+    else {
+      // Append To s
+      encodedText += s[i];
+
+    }
+
+    // Increase I
+    i++;
+  }
+
+  return encodedText;
+};
+
+</script>
+
+
+
+// console.log(caesarCipher('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 2));
+// console.log(caesarCipher('GUR DHVPX OEBJA QBT WHZCRQ BIRE GUR YNML SBK.', 26 + 13));
+
