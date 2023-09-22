@@ -214,8 +214,11 @@ def updateRepo(repo, file, content=None):
             branch=branch,
         )
 
-    except Exception as error:
-        reference = repo.get_contents(file, ref=branch)
+    except Exception as e:
+        prompt(e)
+        reference = repo.get_contents(path, ref=branch)
+        assert(reference)
+
         return repo.update_file(
             path=reference.path,
             message="Update file content",
