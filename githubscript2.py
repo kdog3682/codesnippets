@@ -215,7 +215,8 @@ def updateRepo(repo, file, content=None):
         )
 
     except Exception as e:
-        prompt(e)
+        prompt('a')
+        checkErrorMessage(e)
         reference = repo.get_contents(path, ref=branch)
         assert(reference)
 
@@ -244,7 +245,7 @@ def gitPush(dir, commitMessage='autopush'):
 
 def getErrorMessage(e):
     s = search('"message": "(.*?)"', str(e))
-    return re.sub('\.$', '', s)
+    return re.sub('\.$', '', s.strip())
 
 def archived():
     pass
@@ -258,8 +259,12 @@ def main():
     g.view()
 
 
-def checkErrorMessage(e, s):
-    if getErrorMessage(e) != s:
+def checkErrorMessage(e, s = None):
+    m = getErrorMessage(e)
+    if s == None:
+        return prompt(m)
+
+    if m != s:
         warn('Invalid Error', str(e))
 
 main()
