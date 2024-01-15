@@ -1,23 +1,27 @@
-import base64
 import github
-from base import *
-from next import *
-
-def getToken(key = None):
-    ref = {
-        None: env.kdogGithubToken,
-        'kdog3682': env.kdogGithubToken,
-    }
-    return ref[key]
+from utils import *
 
 class Github:
-    def view(self):
-        contents = self.getRepoContents()
-        pprint(contents)
+    
+    def view(self, path='', file=''):
+        contents = self.getRepoContents(path=path)
+        if file:
+            f = lambda x: tail(x.path) == tail(file)
+            content = find(contents, f)
+            if content:
+                blue_colon('content', content)
+                blue_colon('path', content.path)
+                blue_colon('text', content.decoded_content.decode('utf-8'))
+            else:
+                print('no content found')
+                print('original contents:')
+                pprint(contents)
+        else:
+            pprint(contents)
     
 
     def __init__(self, key=None):
-        self.token = getToken(key)
+        self.token = env.github_token_ref[key]
         self.github = github.Github(self.token)
         self.user = self.github.get_user()
         self.username = self.user.login
@@ -31,17 +35,20 @@ class Github:
             + "\"}' https://api.github.com/user/repos"
         )
         os.system(command)
-        blue('Authenticated', repoName)
+        blue_colon('Authenticated', repoName)
 
-    def setRepo(self, repoName, private=False):
+    def setRepo(self, repoName, private=False, create=False):
 
         if '/' in repoName:
             repoName = repoName.split('/')[-1]
 
+        print('repoName', repoName)
         try:
             self.repo = self.user.get_repo(repoName)
         except Exception as e:
             checkErrorMessage(e, 'Not Found')
+            if not create:
+                raise Exception('The repo doesnt exist and create is False')
 
             try:
                 self.repo = self.user.create_repo(
@@ -54,19 +61,33 @@ class Github:
                 sleep(1)
                 self.repo = self.github.get_repo(repoName)
 
-        blue('Successfully set the repo', repoName)
+        blue_colon('Successfully set the repo', repoName)
         return self.repo
 
-    def getRepoContents(self, repo=None, path=''):
-        if not repo: repo = self.repo
+    def getRepoContents(self, repo=None, path='', recursive = 0):
+        if not repo: 
+            repo = self.repo
+
         try:
-            return repo.get_contents(path, ref=repo.default_branch)
+            ref = repo.default_branch
+            contents = repo.get_contents(path, ref=ref)
+            if not recursive:
+                return contents
+
+            store = []
+            while contents:
+                content = contents.pop(0)
+                if is_private_filename(content.path):
+                    continue
+                if content.type == "dir":
+                    items = repo.get_contents(content.path, ref=ref)
+                    contents.extend(items)
+                else:
+                    store.append(content)
+            return store
+
         except Exception as e:
-            message = getErrorMessage(e)
-            if message == 'This repository is empty':
-                return []
             raise e
-        
 
     def getRepo(self, x):
         if isString(x):
@@ -76,38 +97,32 @@ class Github:
     def getRepos(self):
         return self.user.get_repos()
     
+    def open_url():
+        view(self.repo.html_url)
     
 
-def prompt(*args, aliases=None):
-    for arg in args:
-        if arg:
-            if isString(arg):
-                print(arg)
-            else:
-                pprint(arg)
-    a = input()
-    return aliases.get(a, a) if aliases else a
-
-def require(x, message):
-    if x == None or x == '':
-        raise Exception(message)
-
-def choose(x):
-
-    for i, item in enumerate(x):
-        print(i + 1, item)
-
-    print('')
-    answer = input()
-    if not answer:
-        return 
-
-    indexes = answer.strip().split(' ')
-    value = [x[int(n) - 1] for n in indexes]
-    return smallify(value)
-
-
 class GithubController(Github):
+
+    def download(self, url):
+        r = '/'
+        url = url.replace('https://', '')
+        p = re.split(r, url)
+        user = p[1]
+        repo = p[2]
+        target = p[-1]
+        folderName = prompt3('choose a folder name for the repo: ' + target, fallback = target)
+        query = user + '/' + repo
+        repo = self.github.get_repo(query)
+        items = self.getRepoContents(repo, target, recursive = 1)
+        items = antichoose(items)
+        write = writef(dldir, user + '-' + folderName)
+        store = []
+        t = str(timestamp())
+        for item in items:
+            store.append(t + ' ' + write(item.path, item.decoded_content.decode("utf-8")))
+
+        append('/home/kdog3682/2024/files.log', join(store))
+    	
 
     def run(self):
 
@@ -148,7 +163,7 @@ class GithubController(Github):
             for methodKey,repo in store:
                 getattr(self, methodKey)(repo)
 
-            blue('Finished')
+            blue_colon('Finished')
 
         
         runner()
@@ -162,61 +177,79 @@ class GithubController(Github):
                 return red('Forbidden Deletion', repo.name)
 
         repo.delete()
-        blue('Deleting Repo', repo.name)
+        blue_colon('Deleting Repo', repo.name)
         localName = re.sub('kdog3682-', '', repo.name)
         localDir = npath(rootdir, localName)
         rmdir(localDir, ask=True)
 
 
-    def createLocalRepo(self, dirName, private=False):
-        dirName = dirName.upper()
-        self.setRepo(dirName, private)
-        dir = npath(rootdir, dirName)
+    def upload_file(self, file, content=None, name = None):
+         update_repo(self.repo, file, content, name = None)
 
-        remote = 'origin'
-        username = self.username
+    def upload_directory(self, dir, name = None):
+        files = os.listdir(dir)
+        dirname = head(dir)
+        for file in files:
+            p = Path(dir, file)
+            if p.is_dir():
+                continue
 
-        mkdir(dir)
-        chdir(dir)
+            content = pprint().read_bytes()
+            name = str(Path(dirname, file))
+            update_repo(self.repo, content = content, name = path)
+    
 
-        if not isfile('README.md') and empty(os.listdir(dir)):
-            write('README.md', 'howdy from ' + dir)
+    def initialize_local_directory(self, dir):
+        """
+            turns the given directory into a git repo
+            optionally writes gitignore based on the files present
+        """
 
-        s = f"""
+        if is_git_directory(dir):
+            return printf(""" "$dir" is already a git directory""")
+
+        if not is_dir(dir):
+            answer = inform("""
+                $dir is not an existant directory
+                would you like to create it?
+            """, accept_on_enter = 1)
+            if not answer:
+                return 
+            else:
+                mkdir(dir)
+
+        repo_name = ask("repo_name", tail(dir))
+        address = f"{self.username}/{repo_name}"
+
+        system_command(f"""
             cd {dir}
             git init
             git add .
             git commit -m "first commit"
             git branch -M main
-            git remote add {remote} git@github.com:{username}/{dirName}.git
-            git push -u {remote} main 
-        """
-        result = SystemCommand(s, dir=dir)
-        print({'success': result.success, 'error': result.error})
+            git remote add origin git@github.com:{address}.git
+            git push -u origin main 
+        """, confirm = 1)
 
-    def upload(self, file, content=None):
-         updateRepo(self.repo, file, content)
-    
+        write_gitignore_file(dir)
+        view(self.repo.html_url)
 
-
-def updateRepo(repo, file, content=None):
+def update_repo(repo, file = "", content=None, name = None):
     if not content:
-        content = raw(file)
+        content = read_bytes(file)
 
     branch = repo.default_branch
-    path = tail(file)
+    path = name or tail(file)
 
     try:
         return repo.create_file(
             path=path,
-            message=f"Upload {file}",
+            message=f"uploading {path}",
             content=content,
             branch=branch,
         )
 
     except Exception as e:
-        prompt('a')
-        checkErrorMessage(e)
         reference = repo.get_contents(path, ref=branch)
         assert(reference)
 
@@ -228,43 +261,32 @@ def updateRepo(repo, file, content=None):
             branch=branch,
         )
 
-    
 
-def gitPush(dir, commitMessage='autopush'):
+def run(fn, *args, **kwargs):
+    controller = GithubController(key='kdog3682')
+    with blue_sandwich():
+        print('Kwargs', kwargs)
+        print('Running the Function', fn)
+        print('Github Instance Initialized', controller)
+    fn(controller, *args, **kwargs)
 
-    s = f"""
-        cd {dir}
-        git add .
-        git commit -m "{commitMessage}"
-        git push
+
+def example(g):
+    g.run() # press d to delete the chosen repo
+            # the options will shown up in the aliases
+
+def example(g):
     """
-    SystemCommand(s, dir=dir)
-
-
-
-
-def getErrorMessage(e):
-    s = search('"message": "(.*?)"', str(e))
-    return re.sub('\.$', '', s.strip())
-
-def archived():
-    pass
-    # g.createLocalRepo('RESOURCES', private=True)
-    # g.run()
-
-def main():
-    g = GithubController()
+        We enter the codesnippets repo
+        We upload a file into it
+        We view the contents of the repo
+        We open the url
+    """
     g.setRepo('codesnippets')
-    g.upload('/home/kdog3682/PYTHON/githubscript2.py')
+    g.upload_file('/home/kdog3682/PYTHON/githubscript2.py', name = "abc/foosdfsdf.py")
     g.view()
+    g.open_url()
 
 
-def checkErrorMessage(e, s = None):
-    m = getErrorMessage(e)
-    if s == None:
-        return prompt(m)
-
-    if m != s:
-        warn('Invalid Error', str(e))
-
-main()
+if __name__ == "__main__":
+    run(example)
