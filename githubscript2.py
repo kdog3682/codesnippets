@@ -97,7 +97,7 @@ class Github:
     def getRepos(self):
         return self.user.get_repos()
     
-    def open_url():
+    def open_url(self):
         view(self.repo.html_url)
     
 
@@ -184,7 +184,7 @@ class GithubController(Github):
 
 
     def upload_file(self, file, content=None, name = None):
-         update_repo(self.repo, file, content, name = None)
+         return update_repo(self.repo, file, content, name = None)
 
     def upload_directory(self, dir, name = None):
         files = os.listdir(dir)
@@ -250,6 +250,7 @@ def update_repo(repo, file = "", content=None, name = None):
         )
 
     except Exception as e:
+        print(str(e))
         reference = repo.get_contents(path, ref=branch)
         assert(reference)
 
@@ -283,9 +284,9 @@ def example(g):
         We open the url
     """
     g.setRepo('codesnippets')
-    g.upload_file('/home/kdog3682/PYTHON/githubscript2.py', name = "abc/foosdfsdf.py")
-    g.view()
-    g.open_url()
+    print(g.upload_file('/home/kdog3682/PYTHON/githubscript2.py', name = "abc/foosdfsdf.py"))
+    # g.view()
+    # g.open_url()
 
 
 if __name__ == "__main__":
